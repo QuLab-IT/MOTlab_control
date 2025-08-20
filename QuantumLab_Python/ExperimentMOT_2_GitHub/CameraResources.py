@@ -5,11 +5,8 @@ Created on Tue May 28 14:47:48 2019
 @author: ruggero
 """
 
-from pypylon import pylon
-from pypylon import genicam
 import numpy
-import time
-import sys
+from pypylon import genicam, pylon
 
 ### All the method input parameters are meant to be passed in string format unless differently specified. 
 ### 'Name' variables are always strings.

@@ -9,28 +9,23 @@ Controls AWGs, oscilloscopes and cameras.
 
 """
 
+import gc
+import sys
+import time
+
 ### Standard library imports
 import matplotlib.pyplot as plt
-import time
-import sys
 import numpy as np
-import csv
-from struct import unpack
-from PIL import Image
-from scipy import ndimage, optimize
-from scipy.fftpack import fft
-import cv2
-import random
-import gc
+from AnalysysBMP_Exp import Image_Matrix, SaturatedExp, SubtractImgs
+from CameraResources import MultipleCameraSession, TransportLayerCreator
 ### Third party imports
-from pypylon import pylon
-from pypylon import genicam
-import pyvisa as visa
 ### Local application imports
-from MultiResources import ResourceManagerCreator, ResourceSession, AWGSession, OscilloscopeSession, CreateArbitraryWaveformVectorFromCSVFile, SelectWaveform
-from CameraResources import TransportLayerCreator, MultipleCameraSession
-from AnalysysBMP_Exp import Gauss, FlatTopGauss, SaturatedExp, std_dev, SubtractImgs, LogImg, DivideImgs, PanShotAbsorption, PanShotAbsorptionReduced, Image_Matrix
-from Modify_csv_with_python import ModifyCSV
+from MultiResources import (CreateArbitraryWaveformVectorFromCSVFile,
+                            SelectWaveform)
+from PIL import Image
+from scipy import optimize
+from scipy.fftpack import fft
+
 #from Start import AWGBaseConfiguration, No_MOT, ClearAllVolatiles, AWGSafeConfiguration, CloseEverythingSafely, Background_capture
 
 #%% FOLDER REFERENCE

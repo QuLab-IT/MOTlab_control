@@ -9,11 +9,7 @@ Script used to output simple built-in functions from AWGs.
 ALWAYS CHECK VOLTAGE LIMITS AND LOADS!!!
 """
 
-import numpy as np
-from struct import unpack
-import time
-import visa
-from MultiResources import ResourceManagerCreator, ResourceSession, AWGSession,  OscilloscopeSession
+from MultiResources import ResourceManagerCreator, AWGSession,  OscilloscopeSession
 
 # %% INITIALISATION   ### DS: DeviceSession.
 Mg = ResourceManagerCreator() ### Create Manager.

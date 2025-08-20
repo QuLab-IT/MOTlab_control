@@ -5,11 +5,12 @@ Created on Thu Apr 11 15:20:46 2019
 @author: ruggero
 """
 
+import csv
+from struct import unpack
+
 import numpy as np
 #import visa (deprecated)
 import pyvisa as visa
-import csv
-from struct import unpack
 
 ### All the method input parameters are meant to be passed in string format unless differently specified. 
 ### 'Name' variables are always strings.
@@ -210,13 +211,13 @@ class OscilloscopeSession(ResourceSession):
     
 class AWGSession(ResourceSession):
     ''' Add AWG session inheriting from ResourceSession. '''
-    def __init__(self, ResMgCrt, ResourceName, Role = 'Gunner'):
+    def __init__(self, ResMgCrt, ResourceName, role = 'Gunner'):
         ResourceSession.__init__(self, ResMgCrt, ResourceName)
         ### 'Role' can be either 'Gunner' (default) or 'Captain'
         ### 'Captain' is the only one allowed to trigger the others. CHECK the hardware connections 
         ### to identify the 'Captain'. If a device stands alone, it has to be a 'Captain' to be triggered.
-        ### IF AWG'S ESTERNAL TRIGGERS ARE PHYSICALLY CONNECTED THERE CAN BE JUST ONE CAPTAIN.
-        self.role = Role
+        ### IF AWG'S EXTERNAL TRIGGERS ARE PHYSICALLY CONNECTED THERE CAN BE JUST ONE CAPTAIN.
+        self.role = role
         self.triggersource = ''
         if self.role == 'Captain': 
             self.triggersource = 'BUS'
@@ -350,7 +351,7 @@ class AWGSession(ResourceSession):
         '''
         ### To start the arbitrary waveform you need to apply a trigger with Trigger()
         ### FuncName is the name of the function already in the volatile memory that you gave to 
-        ### the uploaded arbitrary fuction as a parameter in AddArbitraryWaveformToChannelVolatileMemory()
+        ### the uploaded arbitrary function as a parameter in AddArbitraryWaveformToChannelVolatileMemory()
         ### SampleRate in Sa/s
         ### All the values in the arbitrary waveform have to fall in the [-1, +1].
         ### Sets the proper trigger according to the Role

@@ -5,15 +5,12 @@ Created on Mon Sep 30 13:50:35 2019
 @author: MOT_User
 """
 
-import os
-import matplotlib.pyplot as plt
-from PIL import Image ###usefull to convert np.array in images when saving them
-#from scipy.optimize import curve_fit
-import numpy as np
-from scipy import ndimage, optimize
-import cv2
-from tifffile import imsave
 import copy
+import os
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import optimize
 
 #%% GENERAL FUNCTIONS
 

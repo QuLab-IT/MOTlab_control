@@ -12,16 +12,9 @@ This file serve as a instrument test:
 """
 
 ### Standard library imports
-import matplotlib.pyplot as plt
 import time
-import sys
-import numpy as np
-import csv
-from struct import unpack
-### Third party imports
-import visa
 ### Local application imports
-from MultiResources import ResourceManagerCreator, ResourceSession, AWGSession, OscilloscopeSession, CreateArbitraryWaveformVectorFromCSVFile, SelectWaveform
+from MultiResources import ResourceManagerCreator, AWGSession
 
 # %% INITIALISATION
 

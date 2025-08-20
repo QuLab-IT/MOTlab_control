@@ -7,7 +7,6 @@ Created on Wed May 29 16:17:41 2019
 
 from CameraResources import TransportLayerCreator, MultipleCameraSession
 import time
-import matplotlib.pyplot as plt
 
 CamNameToPicNum = {
         'Cam0' : 0,
