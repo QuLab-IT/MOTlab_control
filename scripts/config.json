@@ -1,0 +1,9 @@
+{
+    "temperature_sensor_port_cube": "/dev/ttyACM0",
+    "temperature_sensor_bellow": "/dev/ttyACM2",
+    "pressure_gauge_port": "/dev/ttyUSB1",
+    "relay_main_chamber_ip": "192.168.31.53",
+    "relay_bellow_ip": "192.168.31.251",
+    "relays_email": "labmottec@gmail.com",
+    "relays_password": "MP2018-2023Laser"
+}

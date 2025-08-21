@@ -1,0 +1,9 @@
+matplotlib
+pyserial
+-e git+https://github.com/QuLab-IT/Instrumental.git@master#egg=instrumental-lib
+-e git+https://github.com/almottier/TapoP100.git@main#egg=PyP100
+
+# Basler camera recording dependencies
+pypylon
+opencv-python
+numpy
