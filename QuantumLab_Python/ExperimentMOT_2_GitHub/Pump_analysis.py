@@ -9,7 +9,7 @@ import gc
 
 import matplotlib.pyplot as plt
 import numpy as np
-from AnalysysBMP_Exp import (
+from QuantumLab_Python.ExperimentMOT_2_GitHub.utils.AnalysysBMP_Exp import (
     DivideImgs,
     Image_Matrix,
     LogImg,

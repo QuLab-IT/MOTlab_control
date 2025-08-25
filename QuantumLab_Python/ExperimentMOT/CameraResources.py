@@ -33,10 +33,10 @@ class MultipleCameraSession():
         ### NumOfCamsConnected is a integer that represents the number of connected cameras.
         self.cam_number = NumOfCamsConnected
         self.SerialNumToName = {
-                '21749791' : 'Cam0',
-                '21757012' : 'Cam1',
-                '21757013' : 'Cam2', 
-                }
+            '21749791' : 'Cam0',
+            '21757012' : 'Cam1',
+            '21757013' : 'Cam2', 
+        }
         self.NameToObject = {}  ### From camera name to 'camera' object.
         self.CameraSerialNumber = []
         self.cameras = pylon.InstantCameraArray(self.cam_number)
