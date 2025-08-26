@@ -18,7 +18,7 @@ import time
 ### Standard library imports
 import matplotlib.pyplot as plt
 from AnalysysBMP_Exp import Image_Matrix, SubtractImgs
-from CameraResources import MultipleCameraSession, TransportLayerCreator
+from CameraResources import MultipleCameraSession
 from PIL import Image
 
 ### Third party imports
@@ -88,8 +88,7 @@ NumOfConnectedCameras = 3
 ListOfCamerasToBeTriggered = ['Cam2']
 #-----------------------------------------------------------------------------
 if ListOfCamerasToBeTriggered:
-    TLF = TransportLayerCreator() ### Create Transport Layer
-    MCS = MultipleCameraSession(TLF, NumOfCamsConnected = NumOfConnectedCameras)
+    MCS = MultipleCameraSession(NumOfCamsConnected = NumOfConnectedCameras)
     time.sleep(0.1)
 
 # %% AWG ERROR PRINTING

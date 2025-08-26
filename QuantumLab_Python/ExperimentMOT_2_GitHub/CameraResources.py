@@ -12,23 +12,21 @@ from pypylon import genicam, pylon
 ### 'Name' variables are always strings.
 ### Descriptions of function and classes are also accessible through docstrings.
 
-class TransportLayerCreator():
-    ''' Gets the transport layer factory. '''
-    def __init__(self):
-        self.tlFactory = pylon.TlFactory.GetInstance()
-        ### Get all attached devices and exit application if no device is found.
-        self.devices = self.tlFactory.EnumerateDevices()
-        if len(self.devices) == 0:
-            raise pylon.RUNTIME_EXCEPTION("No camera present.")
-        #print('available devices: ', devices)
-        print('Camera devices found:', len(self.devices))
+
     
 class MultipleCameraSession():
     ''' Gets the cameras ready and allows to define all the necessary 
     parameters to trigger those cameras.
     '''
-    def __init__(self, TLCrt, NumOfCamsConnected):
-        ### TLCrt is an instance of TransportLayerCreator.
+    def __init__(self, NumOfCamsConnected):
+        self.tlFactory = pylon.TlFactory.GetInstance()
+        ### Get all attached devices and exit application if no device is found.
+        self.devices = self.tlFactory.EnumerateDevices()
+        if len(self.devices) == 0:
+            raise pylon.RUNTIME_EXCEPTION("No camera present.")
+        
+        print(f'Camera devices found: {len(self.devices)}')
+        
         ### NumOfCamsConnected is a integer that represents the number of connected cameras.
         self.cam_number = NumOfCamsConnected
         self.SerialNumToName = {
@@ -43,13 +41,13 @@ class MultipleCameraSession():
         ### Create and attach all Pylon Devices.
         print('Attaching devices to cameras and opening them: ')
         for i, CamObj in enumerate(self.cameras): ### Enumerate is a python function. CamObj is a 'camera' object.
-            CamObj.Attach(TLCrt.tlFactory.CreateDevice(TLCrt.devices[i]))
+            CamObj.Attach(self.tlFactory.CreateDevice(self.devices[i]))
             CameraInfo = CamObj.GetDeviceInfo().GetPropertyValue('SerialNumber')
             #print('camera info: ' + CameraInfo[1])
             ### You do not know in which order cameras are attached. So you need to create the list CameraSerialNumber.
             self.CameraSerialNumber.append(CameraInfo[1])            
             if self.CameraSerialNumber[i] in self.SerialNumToName: 
-                print("SerialNumber", self.CameraSerialNumber[i], self.SerialNumToName [self.CameraSerialNumber[i]])
+                print(f'SerialNumber {self.CameraSerialNumber[i]} {self.SerialNumToName [self.CameraSerialNumber[i]]}')
                 ### Disable pylon's default configuration handler which otherwise would configure
                 ### the camera back to not using an external trigger.
                 CamObj.RegisterConfiguration(pylon.ConfigurationEventHandler(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete) 
@@ -85,8 +83,8 @@ class MultipleCameraSession():
         cam.TriggerDelay.SetValue(TrgDelay) ### Trigger delay in us.
         cam.TriggerMode.SetValue(Status) ### 'Status': 'On' or 'Off'.
         print(CameraName + ' Burst trigger:')
-        print('Trigger Selector =', cam.TriggerSelector.GetValue(), '/ Trigger Mode =', cam.TriggerMode.GetValue())
-        print('Trigger Source =', cam.TriggerSource.GetValue(), '/ Trigger Activation =', cam.TriggerActivation.GetValue(), '/ Trigger Delay =', str(cam.TriggerDelay.GetValue()), '\n')
+        print(f'Trigger Selector = {cam.TriggerSelector.GetValue()} / Trigger Mode = {cam.TriggerMode.GetValue()}')
+        print(f'Trigger Source = {cam.TriggerSource.GetValue()} / Trigger Activation = {cam.TriggerActivation.GetValue()} / Trigger Delay = {str(cam.TriggerDelay.GetValue())}')
 
     def Set_AcquisitionMode_FrameTrigger(self, CameraName, Status, TrgActivation = 'FallingEdge', TrgDelay = 0):
         ''' Set acquisition Mode, Frame trigger preferences. '''
@@ -102,9 +100,9 @@ class MultipleCameraSession():
         cam.TriggerDelay.SetValue(TrgDelay) ### Trigger delay in us.
         cam.TriggerMode.SetValue(Status) ### 'Status': 'On' or 'Off'. If 'Off': FreeRun Mode
         print(CameraName + ' Acquisition Mode and Frame trigger:')
-        print('Acquisition Mode =', cam.AcquisitionMode.GetValue())
-        print('Trigger Selector =', cam.TriggerSelector.GetValue(), '/ Trigger Mode =', cam.TriggerMode.GetValue())
-        print('Trigger Source =', cam.TriggerSource.GetValue(), '/ Trigger Activation =', cam.TriggerActivation.GetValue(), '/ Trigger Delay =', str(cam.TriggerDelay.GetValue()), '\n')
+        print(f'Acquisition Mode = {cam.AcquisitionMode.GetValue()}')
+        print(f'Trigger Selector = {cam.TriggerSelector.GetValue()} / Trigger Mode = {cam.TriggerMode.GetValue()}')
+        print(f'Trigger Source = {cam.TriggerSource.GetValue()} / Trigger Activation = {cam.TriggerActivation.GetValue()} / Trigger Delay = {str(cam.TriggerDelay.GetValue())}')
     
     def Set_ROI(self, CameraName, CamBinning = 1, PixelWidth = 2048, PixelHeight = 2048, OffX = 0, OffY = 0):
         ''' Set Region Of Interest. PixelWidth must be divisible by 8 (Note Pixel Heigth).
@@ -119,10 +117,10 @@ class MultipleCameraSession():
         cam.OffsetX.SetValue(OffX)
         cam.OffsetY.SetValue(OffY)
         print(CameraName + ' ROI:')
-        print('Width =', cam.Width.GetValue(), '/ Height =', cam.Height.GetValue(), '/ OffX =', cam.OffsetX.GetValue(), '/ OffY =', cam.OffsetY.GetValue())
-        print('Cam Binning Horizontal  =',  cam.BinningHorizontal.GetValue(), '. Cam Binning Vertical =', cam.BinningVertical.GetValue() )
-        print('Pixel Format = ' + cam.PixelFormat.GetValue()) ### The less bits the faster.
-        print('Sensor readout time [us] =', cam.SensorReadoutTime.GetValue(), '\n')
+        print(f'Width = {cam.Width.GetValue()} / Height = {cam.Height.GetValue()} / OffX = {cam.OffsetX.GetValue()} / OffY = {cam.OffsetY.GetValue()}')
+        print(f'Cam Binning Horizontal  = {cam.BinningHorizontal.GetValue()} . Cam Binning Vertical = {cam.BinningVertical.GetValue() }')
+        print(f'Pixel Format = {cam.PixelFormat.GetValue()}') ### The less bits the faster.
+        print(f'Sensor readout time [us] = {cam.SensorReadoutTime.GetValue()}')
     
     def Set_Gain_Exposure(self, CameraName, CamGain = 0, CamExposure = 10000):
         ''' Exposure time and Gain. '''
@@ -130,8 +128,8 @@ class MultipleCameraSession():
         cam.Gain.SetValue(CamGain)
         cam.ExposureMode.SetValue('Timed') ### 'Timed' or 'TriggerWidth'.
         cam.ExposureTime.SetValue(CamExposure) ### Exposure Time in us.
-        print(CameraName + ' Gain and Exposure:')
-        print('Gain =', cam.Gain.GetValue(), '/ Exposure Mode =', cam.ExposureMode.GetValue(), '/ Exposure time [us] =', cam.ExposureTime.GetValue(), '\n')        
+        print(f'{CameraName} Gain and Exposure:')
+        print(f'Gain = {cam.Gain.GetValue()} / Exposure Mode = {cam.ExposureMode.GetValue()} / Exposure time [us] = {cam.ExposureTime.GetValue()}')        
         
     def EnableTimeStamp(self, CameraName):
         ''' Enable Time Stamp. Good to check the order of captured pictures.
@@ -145,7 +143,7 @@ class MultipleCameraSession():
         cam.ChunkSelector.SetValue('Timestamp')
         #cam.ChunkEnable.SetValue('true')
         cam.ChunkEnable.SetValue(True)
-        print(CameraName, ' ', cam.ChunkSelector.GetValue(), ': ', cam.ChunkEnable.GetValue(), '\n', sep = '')        
+        print(f'{CameraName} {cam.ChunkSelector.GetValue()}: {cam.ChunkEnable.GetValue()}')        
     
     def ReadyForTrigger(self, CamNameToPicNum, ListOfCamToBeTriggered):
         ''' Set Cameras ready for trigger. 
@@ -166,7 +164,7 @@ class MultipleCameraSession():
             cam.MaxNumBuffer = cam_to_pic[cam_name] + 2
             #cam.AcquisitionBurstFrameCount.SetValue(cam_to_pic[cam_name]) 
             cam.StartGrabbingMax(cam_to_pic[cam_name])            
-        print(*cam_list, 'waiting for trigger', '\n')
+        print(f'{" ".join(cam_list)} waiting for trigger\n')
         ### StartGrabbingMax() talks with the RetrieveResult() of each camera. 
         ### RetrieveResult automatically stop the grabbing 
         ### when the max number of pictures have been reached.
@@ -195,14 +193,14 @@ class MultipleCameraSession():
                             else:
                                 time_elapsed_us = int((grabResult.ChunkTimestamp.Value - last_timestamp)/1000)  
                                 last_timestamp = grabResult.ChunkTimestamp.Value
-                            print('Picture number ', Imagenum, ', ', cam_name, '. Max Intensity: ', numpy.amax(img), '. us since last picture: ', time_elapsed_us,  sep = '')
+                            print(f'Picture number {Imagenum}, {cam_name}. Max Intensity: {numpy.amax(img)}. us since last picture: {time_elapsed_us}')
                     else:
-                        print('Picture number ', Imagenum, ', ', cam_name, '. Max Intensity: ', numpy.amax(img), sep = '')
+                        print(f'Picture number {Imagenum}, {cam_name}. Max Intensity: {numpy.amax(img)}')
                     self.CamNameToImageList[cam_name].append(img) 
                 else:
-                    print("Error: ", grabResult.ErrorCode, grabResult.ErrorDescription)
+                    print(f'Error: {grabResult.ErrorCode} {grabResult.ErrorDescription}')
                     grabResult.Release()           
-            print('Images acquired ', cam_name, ': ', len(self.CamNameToImageList[cam_name]), '/', cam_to_pic[cam_name], '\n', sep = '')
+            print(f'Images acquired {cam_name}: {len(self.CamNameToImageList[cam_name])} / {cam_to_pic[cam_name]}\n')
             
               
 

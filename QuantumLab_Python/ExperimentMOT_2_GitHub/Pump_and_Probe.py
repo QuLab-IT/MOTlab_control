@@ -17,11 +17,12 @@ import time
 ### Standard library imports
 import matplotlib.pyplot as plt
 import numpy as np
-from AnalysysBMP_Exp import DivideImgs, Image_Matrix, LogImg, SubtractImgs, std_dev
-from CameraResources import MultipleCameraSession, TransportLayerCreator
-
+from AnalysysBMP_Exp import (DivideImgs, Image_Matrix, LogImg, SubtractImgs,
+                             std_dev)
+from CameraResources import MultipleCameraSession
 ### Local application imports
-from MultiResources import CreateArbitraryWaveformVectorFromCSVFile, SelectWaveform
+from MultiResources import (CreateArbitraryWaveformVectorFromCSVFile,
+                            SelectWaveform)
 from PIL import Image
 from tqdm import tqdm
 
@@ -100,8 +101,7 @@ NumOfConnectedCameras = 3
 ListOfCamerasToBeTriggered = ["Cam0", "Cam1"]
 # -----------------------------------------------------------------------------
 if ListOfCamerasToBeTriggered:
-    TLF = TransportLayerCreator()  ### Create Transport Layer
-    MCS = MultipleCameraSession(TLF, NumOfCamsConnected=NumOfConnectedCameras)
+    MCS = MultipleCameraSession(NumOfCamsConnected=NumOfConnectedCameras)
     time.sleep(0.1)
 
 # %% PREPARE AWGs' OUTPUTS

@@ -16,26 +16,79 @@ import time
 ### Standard library imports
 import matplotlib.pyplot as plt
 from AnalysysBMP_Exp import Image_Matrix
-from CameraResources import MultipleCameraSession, TransportLayerCreator
+from CameraResources import MultipleCameraSession
 from Modify_csv_with_python import ModifyCSV
-
 ### Local application imports
-from MultiResources import (
-    AWGSession,
-    CreateArbitraryWaveformVectorFromCSVFile,
-    ResourceManagerCreator,
-    SelectWaveform,
-)
+from MultiResources import (AWGSession,
+                            CreateArbitraryWaveformVectorFromCSVFile,
+                            ResourceManagerCreator, SelectWaveform)
 from PIL import Image
 
 # %% INITIALISATION   ### DS: DeviceSession.
 Mg = ResourceManagerCreator()  ### Create Manager.
+
+configs = {
+    "Scattering": [
+        {"device": "MOT_switch", "start": 31, "exposure": Exposure // 10, "value": 0.111},
+        {"device": "Rep_switch", "start": 31, "exposure": Exposure // 10, "value": 1},
+    ],
+    "Pump": [
+        {"device": "MOT_switch", "start": 31, "exposure": Exposure // 10, "value": 1},
+        {"device": "Rep_switch", "start": 31, "exposure": Exposure // 10, "value": 0},
+        {"device": "AWG4_1", "start": 1051, "exposure": Exposure // 10, "value": 1},
+        {"device": "Probe_2pass", "start": 1050, "exposure": Exposure // 10 + 1, "value": 0.444},
+    ],
+    "Probe": [
+        {"device": "MOT_switch", "start": 31, "exposure": Exposure // 10, "value": 1},
+        {"device": "Rep_switch", "start": 31, "exposure": Exposure // 10, "value": 0},
+        {"device": "Probe_switch", "start": 1051, "exposure": Exposure // 10, "value": 0.111},
+    ]
+}
 
 DS_AWG1 = AWGSession(Mg, "AWG1", "Captain")
 DS_AWG2 = AWGSession(Mg, "AWG2")
 DS_AWG3 = AWGSession(Mg, "AWG3")
 DS_AWG4 = AWGSession(Mg, "AWG4")
 DS_AWG5 = AWGSession(Mg, "AWG5")
+
+AWG_CONFIGS = {
+    "AWG1_1": {
+        "Session": DS_AWG1,
+        "Load": "1000",
+        "AWGChannelNum": "1",
+        "VHigh": "9",
+    },
+    "AWG2_1": {
+        "Session": DS_AWG2,
+        "Load": "1000",
+        "AWGChannelNum": "1",
+        "VHigh": "5",
+    },
+    "AWG3_1": {
+        "Session": DS_AWG3,
+        "Load": "1000",
+        "AWGChannelNum": "1",
+        "VHigh": "9",
+    },
+    "AWG3_2": {
+        "Session": DS_AWG3,
+        "Load": "1000",
+        "AWGChannelNum": "2",
+        "VHigh": "9",
+    },
+    "AWG4_1": {
+        "Session": DS_AWG4,
+        "Load": "50",
+        "AWGChannelNum": "1",
+        "VHigh": "5",
+    },
+    "AWG5_2": {
+        "Session": DS_AWG5,
+        "Load": "INF",
+        "AWGChannelNum": "2",
+        "VHigh": "5",
+    },
+}
 
 """
 DS_AWG1 = AWGSession(Mg, 'AWG1')   
@@ -50,6 +103,7 @@ DS_AWG3 = AWGSession(Mg, 'AWG3', 'Captain')
 DS_AWG4 = AWGSession(Mg, 'AWG4', 'Captain') 
 DS_AWG5 = AWGSession(Mg, 'AWG5', 'Captain')                 
 """
+
 
 
 # %% Function
@@ -143,16 +197,40 @@ def CloseEverythingSafely():
     return None
 
 
-def Background_capture(MeasType, Camera, Exposure, folder_path):
+def Background_capture(
+        MeasType: str,
+        Camera: str,
+        Exposure: int,
+        folder_path: str,
+        ExperimentDuration: float = 0.02,
+        number_of_experiments: int = 1,
+    ) -> None:
     """
-    NOTE: check that the camera configuration corresponds to the one in the
-    script used to call this function.
-    Assumes Resource Manager alredy created and resources already opened.
-    Detunings have to be chosen beforehand, in the main script.
-    Exposure is a int (us exposure).
-    MeasType = ['Scattering', 'Pump', 'Probe'].
-    If exposure is less than 50 us, camera exposure time is set to 50. All the rest is
+    Parameters
+    ----------
+    MeasType : str
+        Type of measurement. MeasType = ['Scattering', 'Pump', 'Probe'].
+    Camera : str
+        Name of the camera.
+    Exposure : int
+        Exposure time in microseconds. If exposure is less than 50 us, camera exposure time is set to 50. All the rest is
     changed to the requested exposure time.
+    folder_path : str
+        Path to the folder where the background images will be saved.
+    ExperimentDuration : float
+        Experiment Duration in seconds.
+    number_of_experiments : int
+        Number of experiments performed
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    - Check that the camera configuration corresponds to the one in the
+    script used to call this function.
+    - Assumes Resource Manager already created and resources already opened.
+    - Detunings have to be chosen beforehand, in the main script.
     """
     if Exposure <= 50:
         exp_cam = 50
@@ -170,15 +248,13 @@ def Background_capture(MeasType, Camera, Exposure, folder_path):
         print("Directory ", dirName, " already exists")
 
     ### INITIALISATION
-    ExperimentDuration = 0.02  ### Experiment Duration in seconds.
-    number_of_experiments = 1  ### Number of experiments performed
     MeasType_to_channel = {
         "Scattering": ["AWG1_1", "AWG2_1", "AWG5_2"],
         "Pump": ["AWG1_1", "AWG2_1", "AWG3_1", "AWG4_1", "AWG5_2"],
         "Probe": ["AWG1_1", "AWG2_1", "AWG3_2", "AWG5_2"],
     }
     AWGChannelsToBeUsed = MeasType_to_channel[MeasType]
-    Captain_to_trigger = "AWG1"
+    Captain_to_trigger: AWGSession = DS_AWG1
     Output_file = "y"  ### 'y' or 'n': if you want the cameras output in a file
     TRG_performed = (
         "n"  ### Variable that controls if trigger has been performed ['n','y']
@@ -186,6 +262,8 @@ def Background_capture(MeasType, Camera, Exposure, folder_path):
     Status = "OK"
     WaveformList = []
     Headers = []
+
+
     if MeasType == "Scattering":
         CamNameToPicNum = {
             "Cam0": 1,
@@ -206,8 +284,7 @@ def Background_capture(MeasType, Camera, Exposure, folder_path):
         }
     NumOfConnectedCameras = 3
     ListOfCamerasToBeTriggered = [Camera]
-    TLF = TransportLayerCreator()  ### Create Transport Layer
-    MCS = MultipleCameraSession(TLF, NumOfCamsConnected=NumOfConnectedCameras)
+    MCS = MultipleCameraSession(NumOfCamsConnected=NumOfConnectedCameras)
 
     """Choose the file name where you want to store the log of the experiment."""
     if Output_file == "y":
@@ -219,163 +296,40 @@ def Background_capture(MeasType, Camera, Exposure, folder_path):
 
     ### EXCEL MODIFICATION
     ### NOTE: 'Probe_2pass' of Probe has to be stated outside Background_capture, as well as 'AWG4_2' for the Pump
-    if MeasType == "Scattering":
+
+    for config in configs[MeasType]:
         ModifyCSV(
             FileName="output/Background.csv",
-            device="MOT_switch",
-            start=31,
-            exposure=Exposure // 10,
-            value=0.111,
-        )
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="Rep_switch",
-            start=31,
-            exposure=Exposure // 10,
-            value=1,
-        )
-    if MeasType == "Pump":
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="MOT_switch",
-            start=31,
-            exposure=Exposure // 10,
-            value=1,
-        )
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="Rep_switch",
-            start=31,
-            exposure=Exposure // 10,
-            value=0,
-        )
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="AWG4_1",
-            start=1051,
-            exposure=Exposure // 10,
-            value=1,
-        )
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="Probe_2pass",
-            start=1050,
-            exposure=Exposure // 10 + 1,
-            value=0.444,
-        )
-    if MeasType == "Probe":
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="MOT_switch",
-            start=31,
-            exposure=Exposure // 10,
-            value=1,
-        )
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="Rep_switch",
-            start=31,
-            exposure=Exposure // 10,
-            value=0,
-        )
-        ModifyCSV(
-            FileName="output/Background.csv",
-            device="Probe_switch",
-            start=1051,
-            exposure=Exposure // 10,
-            value=0.111,
+            device=config["device"],
+            start=config["start"],
+            exposure=config["exposure"],
+            value=config["value"],
         )
 
     ### PREPARATION
     WaveformList, Headers = CreateArbitraryWaveformVectorFromCSVFile(
-        "output/Background.csv", RowNumber=10
+        "output/Background.csv",
+        RowNumber=10,
     )
-    if "AWG1_1" in AWGChannelsToBeUsed:
-        FunctionName = Mg.ResourceNameToJob["AWG1_1"]
-        FunctionVector = SelectWaveform(Headers, WaveformList, FunctionName)
-        DS_AWG1.AddArbitraryWaveformToChannelVolatileMemory(
-            FunctionVector, AWGChannelNum="1", FuncName=FunctionName
-        )
-        # DS_AWG1.SetSyncOn('1', '300', 'NORM') ### Sync Output
-        DS_AWG1.SetBurstOuputArbitraryWaveform(
-            "1000",
+
+    for awg in AWGChannelsToBeUsed:
+        FunctionName = Mg.ResourceNameToJob[awg]
+        session: AWGSession = AWG_CONFIGS[awg]["Session"]
+        session.AddArbitraryWaveformToChannelVolatileMemory(
+            SelectWaveform(Headers, WaveformList, FunctionName),
+            AWGChannelNum=AWG_CONFIGS[awg]["AWGChannelNum"],
             FuncName=FunctionName,
-            AWGChannelNum="1",
+        )
+        # session.SetSyncOn('1', '300', 'NORM') ### Sync Output only present in AWG1_1
+        session.SetBurstOuputArbitraryWaveform(
+            Load=AWG_CONFIGS[awg]["Load"],
+            FuncName=FunctionName,
+            AWGChannelNum=AWG_CONFIGS[awg]["AWGChannelNum"],
             SampleRate="100000",
-            VHigh="9",
+            VHigh=AWG_CONFIGS[awg]["VHigh"],
             VLow="0",
         )
-    if "AWG2_1" in AWGChannelsToBeUsed:
-        FunctionName = Mg.ResourceNameToJob["AWG2_1"]
-        FunctionVector = SelectWaveform(Headers, WaveformList, FunctionName)
-        DS_AWG2.AddArbitraryWaveformToChannelVolatileMemory(
-            FunctionVector, AWGChannelNum="1", FuncName=FunctionName
-        )
-        DS_AWG2.SetBurstOuputArbitraryWaveform(
-            "1000",
-            FuncName=FunctionName,
-            AWGChannelNum="1",
-            SampleRate="100000",
-            VHigh="5",
-            VLow="0",
-        )
-    if "AWG3_2" in AWGChannelsToBeUsed:
-        FunctionName = Mg.ResourceNameToJob["AWG3_1"]
-        FunctionVector = SelectWaveform(Headers, WaveformList, FunctionName)
-        DS_AWG3.AddArbitraryWaveformToChannelVolatileMemory(
-            FunctionVector, AWGChannelNum="1", FuncName=FunctionName
-        )
-        DS_AWG3.SetBurstOuputArbitraryWaveform(
-            "1000",
-            FuncName=FunctionName,
-            AWGChannelNum="1",
-            SampleRate="100000",
-            VHigh="9",
-            VLow="0",
-        )
-    if "AWG3_2" in AWGChannelsToBeUsed:
-        FunctionName = Mg.ResourceNameToJob["AWG3_2"]
-        FunctionVector = SelectWaveform(Headers, WaveformList, FunctionName)
-        DS_AWG3.AddArbitraryWaveformToChannelVolatileMemory(
-            FunctionVector, AWGChannelNum="2", FuncName=FunctionName
-        )
-        DS_AWG3.SetBurstOuputArbitraryWaveform(
-            "1000",
-            FuncName=FunctionName,
-            AWGChannelNum="2",
-            SampleRate="100000",
-            VHigh="9",
-            VLow="0",
-        )
-    if "AWG4_1" in AWGChannelsToBeUsed:
-        FunctionName = Mg.ResourceNameToJob["AWG4_1"]
-        FunctionVector = SelectWaveform(Headers, WaveformList, FunctionName)
-        DS_AWG4.AddArbitraryWaveformToChannelVolatileMemory(
-            FunctionVector, AWGChannelNum="1", FuncName=FunctionName
-        )
-        DS_AWG4.SetBurstOuputArbitraryWaveform(
-            "50",
-            FuncName=FunctionName,
-            AWGChannelNum="1",
-            SampleRate="100000",
-            VHigh="5",
-            VLow="0",
-        )
-    if "AWG5_2" in AWGChannelsToBeUsed:
-        FunctionName = Mg.ResourceNameToJob["AWG5_2"]
-        FunctionVector = SelectWaveform(Headers, WaveformList, FunctionName)
-        DS_AWG5.AddArbitraryWaveformToChannelVolatileMemory(
-            FunctionVector, AWGChannelNum="2", FuncName=FunctionName
-        )
-        DS_AWG5.SetBurstOuputArbitraryWaveform(
-            "INF",
-            FuncName=FunctionName,
-            AWGChannelNum="2",
-            SampleRate="100000",
-            VHigh="5",
-            VLow="0",
-        )
-        time.sleep(0.1)
+    time.sleep(0.1)
 
     print("RESUME:")
     print("Background of " + MeasType + " " + Camera)
@@ -460,21 +414,20 @@ def Background_capture(MeasType, Camera, Exposure, folder_path):
                 print("Background of " + MeasType + " " + Camera)
                 if ListOfCamerasToBeTriggered:
                     MCS.ReadyForTrigger(
-                        CamNameToPicNum, ListOfCamerasToBeTriggered
+                        CamNameToPicNum,
+                        ListOfCamerasToBeTriggered,
                     )  ### Cameras Ready for trigger
                 time.sleep(0.1)
-                eval("DS_%s.Trigger()" % Captain_to_trigger)
+                Captain_to_trigger.Trigger()
                 time.sleep(ExperimentDuration)  ### Wait for the experiment to end
                 if ListOfCamerasToBeTriggered:
                     MCS.RetrievePictures(
-                        CamNameToPicNum, ListOfCamerasToBeTriggered
+                        CamNameToPicNum,
+                        ListOfCamerasToBeTriggered,
                     )  ### Retrieve Pictures from Buffer
                     list_of_dictionaries.append(MCS.CamNameToImageList)
                 print(
-                    "The experiment has been allowed to run for ",
-                    ExperimentDuration,
-                    " seconds.",
-                    sep="",
+                    f"The experiment has been allowed to run for {ExperimentDuration} seconds.",
                 )
                 print("Experiment concluded.", "\n")
                 TRG_performed = "y"

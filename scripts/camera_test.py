@@ -229,6 +229,5 @@ NumOfConnectedCameras = 3
 ListOfCamerasToBeTriggered = ['Cam2']
 #-----------------------------------------------------------------------------
 if ListOfCamerasToBeTriggered:
-    TLF = TransportLayerCreator() ### Create Transport Layer
-    MCS = MultipleCameraSession(TLF, NumOfCamsConnected = NumOfConnectedCameras)
+    MCS = MultipleCameraSession(NumOfCamsConnected = NumOfConnectedCameras)
     time.sleep(0.1)

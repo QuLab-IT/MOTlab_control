@@ -17,7 +17,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from AnalysysBMP_Exp import Image_Matrix, SaturatedExp, SubtractImgs
-from CameraResources import MultipleCameraSession, TransportLayerCreator
+from CameraResources import MultipleCameraSession
 ### Third party imports
 ### Local application imports
 from MultiResources import (CreateArbitraryWaveformVectorFromCSVFile,
@@ -81,8 +81,7 @@ NumOfConnectedCameras = 3
 ListOfCamerasToBeTriggered = ['Cam2']
 #-----------------------------------------------------------------------------
 if ListOfCamerasToBeTriggered:
-    TLF = TransportLayerCreator() ### Create Transport Layer
-    MCS = MultipleCameraSession(TLF, NumOfCamsConnected = NumOfConnectedCameras)
+    MCS = MultipleCameraSession(NumOfCamsConnected = NumOfConnectedCameras)
     time.sleep(0.1)
 
 # %% PREPARE AWGs' OUTPUTS
