@@ -8,8 +8,13 @@ in a real-time OpenCV window.
 import os
 import sys
 import time
+
 import cv2
+import numpy as np
 from pypylon import pylon
+
+from scripts.background_utils import capture_background, subtract_background
+
 
 # ...existing code...
 def initialize_camera():
@@ -107,6 +112,8 @@ def initialize_camera():
         return None
 
 
+# Background helpers moved to `scripts/background_utils.py`
+
 def display_live_view(camera):
     """Display live video feed from the camera."""
     try:
@@ -126,12 +133,28 @@ def display_live_view(camera):
         frame_count = 0
         start_time = time.time()
         fps_update_interval = 30  # Update FPS every 30 frames
-        
+
+        # Background baseline state
+        background = None
+        bg_enabled = False
+
+        # Option: capture background baseline now
+        try:
+            choice = input("Capture background baseline now? [y/N]: ").strip().lower()
+        except Exception:
+            choice = "n"
+        if choice == "y":
+            background = capture_background(camera, converter, num_frames=30)
+            if background is not None:
+                bg_enabled = True
+
         print("\nLive view started!")
         print("Controls:")
         print("  - Press 'q' or ESC to quit")
         print("  - Press 'f' to toggle fullscreen")
         print("  - Press 's' to save current frame")
+        print("  - Press 'b' to toggle background subtraction")
+        print("  - Press 'c' to (re)capture background baseline")
         
         fullscreen = False
         frame_save_count = 0
@@ -175,42 +198,58 @@ def display_live_view(camera):
                 # Convert to OpenCV format
                 image = converter.Convert(grabResult)
                 img_array = image.GetArray()
+
+                # Apply background subtraction if enabled
+                proc_img = img_array
+                if bg_enabled and background is not None:
+                    try:
+                        proc_img = cv2.subtract(img_array, background)
+                    except Exception as e:
+                        print(f"Background subtraction failed: {e}")
+                        proc_img = img_array
                 
                 # Calculate and display FPS
                 frame_count += 1
                 if frame_count % fps_update_interval == 0:
                     elapsed_time = time.time() - start_time
                     fps = fps_update_interval / elapsed_time
-                    
+
                     # Add FPS text to image
-                    img_display = img_array.copy()
+                    img_display = proc_img.copy()
                     cv2.putText(img_display, f"FPS: {fps:.1f}", (10, 30), 
                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    
+
                     # Add frame counter
                     cv2.putText(img_display, f"Frame: {frame_count}", (10, 70), 
                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    
+
                     # Add controls info (include exposure controls)
-                    cv2.putText(img_display, "Press 'q' to quit", (10, img_display.shape[0] - 110), 
+                    cv2.putText(img_display, "Press 'q' to quit", (10, img_display.shape[0] - 140), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    cv2.putText(img_display, "Press 'f' for fullscreen", (10, img_display.shape[0] - 80), 
+                    cv2.putText(img_display, "Press 'f' for fullscreen", (10, img_display.shape[0] - 110), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    cv2.putText(img_display, "Press 's' to save frame", (10, img_display.shape[0] - 50), 
+                    cv2.putText(img_display, "Press 's' to save frame", (10, img_display.shape[0] - 80), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    cv2.putText(img_display, "Press '[' / ']' to decrease / increase exposure", (10, img_display.shape[0] - 20), 
+                    cv2.putText(img_display, "Press 'b' to toggle BG subtraction", (10, img_display.shape[0] - 50), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    
+                    cv2.putText(img_display, "Press 'c' to (re)capture background", (10, img_display.shape[0] - 20), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
                     start_time = time.time()
                 else:
-                    img_display = img_array
-                
+                    img_display = proc_img
+
+                # Show background subtraction status
+                status_text = f"BG SUB: {'ON' if bg_enabled and background is not None else 'OFF'}"
+                cv2.putText(img_display, status_text, (img_display.shape[1] - 220, 30),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255) if bg_enabled else (0, 0, 255), 2)
+
                 # Display the image
                 cv2.imshow(window_name, img_display)
-                
+
                 # Handle key presses
                 key = cv2.waitKey(1) & 0xFF
-                
+
                 if key == ord('q') or key == 27:  # 'q' or ESC key
                     print("Exiting live view...")
                     break
@@ -228,11 +267,22 @@ def display_live_view(camera):
                     output_dir = os.path.join(os.path.dirname(__file__), "output")
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
-                    
+
                     filename = f"basler_frame_{timestamp}_{frame_save_count:03d}.jpg"
                     filepath = os.path.join(output_dir, filename)
-                    cv2.imwrite(filepath, img_array)
+                    cv2.imwrite(filepath, proc_img)
                     print(f"Frame saved to: {filepath}")
+                elif key == ord('b'):
+                    bg_enabled = not bg_enabled
+                    print(f"Background subtraction {'enabled' if bg_enabled else 'disabled'}")
+                elif key == ord('c'):
+                    print("Recapturing background baseline...")
+                    background = capture_background(camera, converter, num_frames=30)
+                    if background is not None:
+                        bg_enabled = True
+                        print("Background updated and enabled.")
+                    else:
+                        print("Background recapture failed.")
                 elif key == ord(']'):
                     print("Increasing exposure...")
                     # Increase exposure (best-effort)

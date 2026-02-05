@@ -12,12 +12,16 @@ Controls:
   - Press 'f' to toggle fullscreen on selected camera's window
 """
 
+import math
 import os
 import sys
-import math
 import time
+
 import cv2
+import numpy as np
 from pypylon import pylon
+
+from scripts.background_utils import capture_background, subtract_background
 
 WINDOW_BASE_NAME = "Basler Camera"
 
@@ -83,7 +87,9 @@ def init_cameras():
                 "exposure_supported": False,
                 "exp_val": None,
                 "exp_min": None,
-                "exp_max": None
+                "exp_max": None,
+                "background": None,
+                "bg_enabled": False
             })
         except Exception as e:
             print(f"Could not initialize camera {idx}: {e}")
@@ -171,7 +177,7 @@ def save_frames(cameras, out_dir="output"):
         os.makedirs(out_dir)
     ts = time.strftime("%Y%m%d_%H%M%S")
     for idx, cam_info in enumerate(cameras):
-        frame = cam_info.get("frame")
+        frame = cam_info.get("proc_frame", cam_info.get("frame"))
         if frame is None:
             continue
         filename = f"basler_cam{idx}_{cam_info['serial']}_{ts}.jpg"
@@ -208,6 +214,19 @@ def main():
 
     # Start grabbing
     start_grabbing_all(cameras)
+
+    # Optionally capture background baseline for all cameras
+    try:
+        choice = input("Capture background baseline for all cameras now? [y/N]: ").strip().lower()
+    except Exception:
+        choice = "n"
+    if choice == "y":
+        for idx, cam_info in enumerate(cameras):
+            print(f"Capturing background for camera {idx}...")
+            bg = capture_background(cam_info["camera"], cam_info["converter"], num_frames=30)
+            if bg is not None:
+                cam_info["background"] = bg
+                cam_info["bg_enabled"] = True
 
     # Display loop variables
     running = True
@@ -249,14 +268,24 @@ def main():
                             cam_info["fps"] = fps_update_interval / elapsed
                         cam_info["fps_time"] = time.time()
 
-                    # Annotate frame with info
-                    disp = frame.copy()
+                    # Apply background subtraction if enabled and annotate
+                    proc = frame
+                    if cam_info.get("bg_enabled") and cam_info.get("background") is not None:
+                        try:
+                            proc = cv2.subtract(frame, cam_info["background"])
+                        except Exception as e:
+                            print(f"Background subtraction failed for camera {idx}: {e}")
+                    disp = proc.copy()
+                    cam_info["proc_frame"] = proc
+
                     cv2.putText(disp, f"Cam {idx} {cam_info['model']} (S/N:{cam_info['serial']})", (10, 25),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                     cv2.putText(disp, f"FPS: {cam_info['fps']:.1f}", (10, 55),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
                     cv2.putText(disp, f"Selected: {'*' if idx == selected_idx else ' '}", (10, 85),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255) if idx == selected_idx else (255, 255, 255), 2)
+                    cv2.putText(disp, f"BG SUB: {'ON' if cam_info.get('bg_enabled') and cam_info.get('background') is not None else 'OFF'}", (10, 115),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255) if cam_info.get('bg_enabled') else (255, 255, 255), 2)
 
                     # Display the frame
                     cv2.imshow(cam_info["window_name"], disp)
@@ -273,9 +302,35 @@ def main():
                 elif key == ord('s'):
                     save_frames(cameras)
                     frame_save_count += 1
-                elif key == ord('c'):
+                elif key == ord('d'):
                     selected_idx = (selected_idx + 1) % len(cameras)
                     print(f"Selected camera {selected_idx}")
+                elif key == ord('b'):
+                    cam_info = cameras[selected_idx]
+                    cam_info["bg_enabled"] = not cam_info.get("bg_enabled", False)
+                    print(f"Camera {selected_idx} background subtraction {'enabled' if cam_info['bg_enabled'] else 'disabled'}")
+                elif key == ord('B'):
+                    for i, ci in enumerate(cameras):
+                        ci["bg_enabled"] = not ci.get("bg_enabled", False)
+                    print("Toggled background subtraction for all cameras")
+                elif key == ord('c'):
+                    cam_info = cameras[selected_idx]
+                    print(f"Recapturing background for camera {selected_idx}...")
+                    bg = capture_background(cam_info["camera"], cam_info["converter"], num_frames=30)
+                    if bg is not None:
+                        cam_info["background"] = bg
+                        cam_info["bg_enabled"] = True
+                        print("Background updated and enabled.")
+                    else:
+                        print("Background recapture failed.")
+                elif key == ord('C'):
+                    print("Recapturing background for all cameras...")
+                    for i, ci in enumerate(cameras):
+                        bg = capture_background(ci["camera"], ci["converter"], num_frames=30)
+                        if bg is not None:
+                            ci["background"] = bg
+                            ci["bg_enabled"] = True
+                    print("Background recapture done.")
                 elif key == ord('f'):
                     # toggle fullscreen for selected window
                     cam_info = cameras[selected_idx]
