@@ -26,52 +26,48 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(figsize=(10, 6))
     
     # Temperature plot
-    thermistors = ["Sublimation pump", "Chamber sleeve", "Bellow sleeve", "Metal interface", "Ion gauge", "Quartz cube"]
-    temp_lines = [ax.plot([], [], label=thermistors[i])[0] for i in range(6)]
+    temp_line, = ax.plot([], [], label='Temperature')
     ax.set_ylim(0, 120)  # Temperature range
     ax.set_xlabel('Time (seconds)')
     ax.set_ylabel('Temperature (°C)')
     ax.legend()
 
     # Data storage
-    temps = [[], [], [], [], [], []]
+    temps = []
     temperature_times = []
     time.sleep(10)
     # CSV file for storage
     with open('temperature_data.csv', 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Time', 'Sublimation pump', 'Chamber sleeve', 'Bellow sleeve', 'Metal interface', 'Ion gauge', 'Quartz cube'])
+        writer.writerow(['Time', 'Temperature'])
         
         print("Starting data collection...")
         while True:
             try:
                 current_time = datetime.now()
                 # Read temperature data
-                temp_values = read_temperature_data(ser)
-                print(temp_values)
+                temp_value = read_temperature_data(ser)
+                print(temp_value)
                 
                 temperature_times.append(current_time)
-                # Update temperature data
-                for i in range(6):
-                    temps[i].append(temp_values[i])
+                temps.append(temp_value)
                 
                 # Convert times to seconds for plotting
                 time_seconds = [(t - temperature_times[0]).total_seconds() for t in temperature_times]
                 
                 # Update temperature plot
-                for i in range(6):
-                    temp_lines[i].set_data(time_seconds, temps[i])
+                temp_line.set_data(time_seconds, temps)
                 ax.set_xlim(min(time_seconds), max(time_seconds))
-                ax.set_ylim(min(min(t) for t in temps) - 5, max(max(t) for t in temps) + 5)
+                ax.set_ylim(min(temps) - 5, max(temps) + 5)
                 
                 # Redraw the plot
                 fig.canvas.draw()
                 fig.canvas.flush_events()
                 
                 # Save to CSV
-                writer.writerow([current_time] + temp_values)
+                writer.writerow([current_time, temp_value])
                 f.flush()
-                print(f"Data saved: {current_time} - Temperatures {temp_values}")
+                print(f"Data saved: {current_time} - Temperature {temp_value}")
                         
             except KeyboardInterrupt:
                 print("\nStopping data collection...")
