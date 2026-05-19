@@ -1,4 +1,5 @@
 {
+    "temperature_sensor_port": "COM6",
     "temperature_sensor_port_cube": "/dev/ttyACM0",
     "temperature_sensor_bellow": "/dev/ttyACM2",
     "pressure_gauge_port": "/dev/ttyUSB1",

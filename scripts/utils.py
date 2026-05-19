@@ -70,10 +70,10 @@ def read_temperature_data(ser):
             # Split the line and convert to floats
             values = [float(x.strip()) for x in line.split(',')]
             
-            if len(values) == 3:
+            if len(values) > 0:
                 return values
             else:
-                print(f"Warning: Expected 3 values from port {ser.port}, got {len(values)}")
+                print(f"Warning: No values from port {ser.port}, got {len(values)}")
                 return None
                 
         except ValueError as e:

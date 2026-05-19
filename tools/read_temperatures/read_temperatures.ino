@@ -7,9 +7,7 @@
 
 #include <thermistor.h>
 
-thermistor therm1(A13, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
-thermistor therm2(A14, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
-thermistor therm3(A15, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
+thermistor therm(A13, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
 
 void setup()
 {
@@ -36,16 +34,10 @@ void loop()
     if (command == 'R')
     {
       // Read temperatures
-      double temp1 = therm1.analog2temp(); // read temperature from thermistor 1
-      double temp2 = therm2.analog2temp(); // read temperature from thermistor 2
-      double temp3 = therm3.analog2temp(); // read temperature from thermistor 3
+      double temp = therm.analog2temp(); // read temperature from thermistor
 
       // Print temperatures as comma-separated values
-      Serial.print(temp1);
-      Serial.print(",");
-      Serial.print(temp2);
-      Serial.print(",");
-      Serial.println(temp3); // Use println to add a newline
+      Serial.println(temp); // Use println to add a newline
     }
     // You could add else if blocks here for other commands if needed
     // else if (command == 'S') { /* do something else */ }

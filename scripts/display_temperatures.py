@@ -46,7 +46,7 @@ if __name__ == "__main__":
             try:
                 current_time = datetime.now()
                 # Read temperature data
-                temp_value = read_temperature_data(ser)
+                temp_value = read_temperature_data(ser)[0]
                 print(temp_value)
                 
                 temperature_times.append(current_time)
