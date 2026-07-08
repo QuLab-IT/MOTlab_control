@@ -6,3 +6,6 @@ This repository keeps the Python codes (written in Python 3.6) used to manage th
 
 To access the MOT's raspberry pi please access https://connect.raspberrypi.com/
 The credential can be obtained from José Senart
+
+# Requirements
+Some of the scripts in this repository employ th Instrumental python lib, forked by our organization. To use it you must install a local version of the repo by going to https://github.com/QuLab-IT/Instrumental and following the local install steps.
