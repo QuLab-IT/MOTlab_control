@@ -41,6 +41,8 @@ if __name__ == "__main__":
             print(f"Could not open bellow serial port {temp_sensor_port_bellow}; continuing without bellow sensor")
             ser_bellow = None
 
+    temp_sensors_available = ser_cube is not None or ser_bellow is not None
+
     pressure_gauge_port = config.get('pressure_gauge_port')
     
     if not pressure_gauge_port:
@@ -49,17 +51,20 @@ if __name__ == "__main__":
 
     ngc2d: NGC2D = initialize_pressure_gauge()
     
-    # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-    
-    # Temperature plot
-    thermistors = ["Sublimation pump", "Chamber sleeve", "Bellow sleeve","Metal interface", "Ion gauge", "Quartz cube"]
-    temp_lines = [ax1.plot([], [], label=thermistors[i])[0] for i in range(6)]
-    ax1.set_ylim(0, 120)  # Temperature range
-    ax1.set_xlabel('Time')
-    ax1.set_ylabel('Temperature (°C)')
-    ax1.legend()
-    
+    # Create figure with a temperature subplot only if a sensor is available
+    if temp_sensors_available:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+        # Temperature plot
+        thermistors = ["Sublimation pump", "Chamber sleeve", "Bellow sleeve","Metal interface", "Ion gauge", "Quartz cube"]
+        temp_lines = [ax1.plot([], [], label=thermistors[i])[0] for i in range(6)]
+        ax1.set_ylim(0, 120)  # Temperature range
+        ax1.set_xlabel('Time')
+        ax1.set_ylabel('Temperature (°C)')
+        ax1.legend()
+    else:
+        fig, ax2 = plt.subplots(1, 1, figsize=(10, 8))
+
     # Pressure plot
     pressure_line, = ax2.plot([], [], label='Pressure')
     ax2.set_yscale('log')  # Use log scale for pressure
@@ -86,32 +91,33 @@ if __name__ == "__main__":
         while True:
             try:
                 current_time = datetime.now()
-                # Read temperature data from available sensors. Each serial read typically returns 3 values.
                 temp_values = [None] * 6
-                cube_vals = None
-                bellow_vals = None
-                if ser_cube:
-                    try:
-                        cube_vals = read_temperature_data(ser_cube)
-                    except Exception as e:
-                        print(f"Error reading cube sensor: {e}")
-                        cube_vals = None
-                if ser_bellow:
-                    try:
-                        bellow_vals = read_temperature_data(ser_bellow)
-                    except Exception as e:
-                        print(f"Error reading bellow sensor: {e}")
-                        bellow_vals = None
+                if temp_sensors_available:
+                    # Read temperature data from available sensors. Each serial read typically returns 3 values.
+                    cube_vals = None
+                    bellow_vals = None
+                    if ser_cube:
+                        try:
+                            cube_vals = read_temperature_data(ser_cube)
+                        except Exception as e:
+                            print(f"Error reading cube sensor: {e}")
+                            cube_vals = None
+                    if ser_bellow:
+                        try:
+                            bellow_vals = read_temperature_data(ser_bellow)
+                        except Exception as e:
+                            print(f"Error reading bellow sensor: {e}")
+                            bellow_vals = None
 
-                # Merge results: cube_vals -> last 3 indices (assumption), bellow_vals -> first 3 indices
-                # If only one sensor is present, fill its positions and leave others as None.
-                if bellow_vals:
-                    for i, v in enumerate(bellow_vals[:3]):
-                        temp_values[i] = v
-                if cube_vals:
-                    for i, v in enumerate(cube_vals[:3]):
-                        temp_values[3 + i] = v
-                print(temp_values)
+                    # Merge results: cube_vals -> last 3 indices (assumption), bellow_vals -> first 3 indices
+                    # If only one sensor is present, fill its positions and leave others as None.
+                    if bellow_vals:
+                        for i, v in enumerate(bellow_vals[:3]):
+                            temp_values[i] = v
+                    if cube_vals:
+                        for i, v in enumerate(cube_vals[:3]):
+                            temp_values[3 + i] = v
+                    print(temp_values)
                 # Read pressure data
                 # Read pressure data from NGC2D
                 
@@ -140,7 +146,7 @@ if __name__ == "__main__":
                     ax2.set_ylim(min(pressures) * 0.1, max(pressures) * 10)
 
                 # Update temperature data if any sensor provided a reading
-                if any(v is not None for v in temp_values):
+                if temp_sensors_available and any(v is not None for v in temp_values):
                     temperature_times.append(current_time)
                     # Append values (None when missing) to each sensor list to preserve alignment
                     for i in range(6):
@@ -162,13 +168,16 @@ if __name__ == "__main__":
                     else:
                         ax1.set_ylim(0, 120)
 
-                    # Redraw the plot
-                    fig.canvas.draw()
-                    fig.canvas.flush_events()
+                # Redraw the plot
+                fig.canvas.draw()
+                fig.canvas.flush_events()
                 # Save to CSV
                 writer.writerow([current_time] + temp_values + [pressure])
                 f.flush()
-                print(f"Data saved: Temperatures {temp_values}, Pressure {pressure:.2e} mbar")
+                if temp_sensors_available:
+                    print(f"Data saved: Temperatures {temp_values}, Pressure {pressure:.2e} mbar")
+                else:
+                    print(f"Data saved: Pressure {pressure:.2e} mbar")
                         
             except KeyboardInterrupt:
                 print("\nStopping data collection...")
