@@ -50,7 +50,29 @@ if __name__ == "__main__":
         sys.exit(1)
 
     ngc2d: NGC2D = initialize_pressure_gauge()
-    
+
+    # Take remote control so we can read gauge status and, if approved, drive the ion gauge
+    ngc2d.control()
+
+    # Check the Pirani pressure before considering the ion gauge: turning on the ion
+    # gauge filament above its safe pressure threshold can damage it.
+    startup_status = ngc2d.get_status()
+    pirani_gauge = next((g for g in startup_status.gauges if g.number == GaugeSelection.PIRANI_1), None)
+
+    use_ion_gauge = False
+    if pirani_gauge is not None and pirani_gauge.pressure is not None:
+        print(f"Pirani gauge pressure: {pirani_gauge.pressure:.2e} mbar")
+        answer = input("Turn on the ion gauge and use it for pressure readings? [y/N]: ").strip().lower()
+        use_ion_gauge = answer in ('y', 'yes')
+    else:
+        print("Warning: could not read Pirani gauge pressure; skipping ion gauge.")
+
+    active_gauge_selection = GaugeSelection.PIRANI_1
+    if use_ion_gauge:
+        ngc2d.gauge_on()
+        print("Ion gauge turned on.")
+        active_gauge_selection = GaugeSelection.ION_GAUGE_1
+
     # Create figure with a temperature subplot only if a sensor is available
     if temp_sensors_available:
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
@@ -122,11 +144,11 @@ if __name__ == "__main__":
                 # Read pressure data from NGC2D
                 
                 ngc2_d_status = ngc2d.get_status()
-                gauge: Gauge = next((g for g in ngc2_d_status.gauges if g.number == GaugeSelection.ION_GAUGE_1), None)
-                
+                gauge: Gauge = next((g for g in ngc2_d_status.gauges if g.number == active_gauge_selection), None)
+
                 pressure = gauge.pressure  # Get pressure in mbar
                 # unit = gauge.unit  # Get pressure in mbar
-                controlling_bakeout = gauge.status.controlling_bakeout
+                controlling_bakeout = getattr(gauge.status, 'controlling_bakeout', None)
                 if controlling_bakeout is not None:
                     # Update bakeout status text
                     bakeout_status = "Bakeout: ON" if controlling_bakeout else "Bakeout: OFF"
@@ -174,10 +196,11 @@ if __name__ == "__main__":
                 # Save to CSV
                 writer.writerow([current_time] + temp_values + [pressure])
                 f.flush()
+                pressure_str = f"{pressure:.2e} mbar" if pressure is not None else "N/A"
                 if temp_sensors_available:
-                    print(f"Data saved: Temperatures {temp_values}, Pressure {pressure:.2e} mbar")
+                    print(f"Data saved: Temperatures {temp_values}, Pressure {pressure_str}")
                 else:
-                    print(f"Data saved: Pressure {pressure:.2e} mbar")
+                    print(f"Data saved: Pressure {pressure_str}")
                         
             except KeyboardInterrupt:
                 print("\nStopping data collection...")
@@ -197,5 +220,10 @@ if __name__ == "__main__":
             ser_bellow.close()
     except Exception:
         pass
-    ngc2d.close()
+    if use_ion_gauge:
+        try:
+            ngc2d.gauge_off()
+        except Exception:
+            pass
+    ngc2d.close()  # releases remote control automatically
     print("Connections closed")
