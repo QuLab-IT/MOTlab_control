@@ -10,6 +10,15 @@ The credential can be obtained from José Senart
 # Requirements
 Some of the scripts in this repository employ th Instrumental python lib, forked by our organization. To use it you must install a local version of the repo by going to https://github.com/QuLab-IT/Instrumental and following the local install steps.
 
+//Create the virtual environment
+python3 -m venv .venv
+
+//Enable the virtual environment
+source .venv/bin/activate
+
+//Install the python environment 
+python3 -m pip install -r requirements.txt
+
 # Uploading Arduino sketches (`tools/arduino_upload.py`)
 `tools/arduino_upload.py` compiles a sketch and uploads it to an Arduino Mega 2560 using [arduino-cli](https://arduino.github.io/arduino-cli/). It is meant to be run on the MOT's Raspberry Pi, so sketches can be updated remotely without the Arduino IDE.
 

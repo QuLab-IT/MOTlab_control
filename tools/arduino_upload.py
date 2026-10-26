@@ -50,7 +50,7 @@ def install_arduino_cli():
         print("Installing arduino-cli...")
         if platform.system() == "Linux":
             # For Raspberry Pi
-            install_script = "curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh"
+            install_script = "curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh | mv  ~/CODE/MOTlab_control/tools/bin ~/.local/bin"
             subprocess.run(install_script, shell=True, check=True)
             
             # Add arduino-cli to PATH if it's not already there
