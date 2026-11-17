@@ -7,7 +7,10 @@
 
 #include <thermistor.h>
 
-thermistor therm(A13, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
+thermistor therm(A12, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
+thermistor therm1(A13, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
+thermistor therm2(A14, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
+thermistor therm3(A15, 11); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
 
 void setup()
 {
@@ -23,6 +26,7 @@ void loop()
   {
     // Read the incoming byte (the command character)
     char command = Serial.read();
+    int i=0;
 
     // Optional: Clear any remaining bytes in the buffer (like newline characters)
     while (Serial.available() > 0)
@@ -34,10 +38,21 @@ void loop()
     if (command == 'R')
     {
       // Read temperatures
-      double temp = therm.analog2temp(); // read temperature from thermistor
+      float temp[4] = {0.0, 0.0, 0.0, 0.0};
+      temp[0] = therm.analog2temp(); // read temperature from thermistor
+      temp[1] = therm1.analog2temp(); // read temperature from thermistor
+      temp[2] = therm2.analog2temp(); // read temperature from thermistor
+      temp[3] = therm3.analog2temp(); // read temperature from thermistor
 
       // Print temperatures as comma-separated values
-      Serial.println(temp); // Use println to add a newline
+      Serial.print(temp[0]); // Use println to add a newline
+      Serial.print(","); // Use println to add a newline
+      Serial.print(temp[1]); // Use println to add a newline
+      Serial.print(","); // Use println to add a newline
+      Serial.print(temp[2]); // Use println to add a newline
+      Serial.print(","); // Use println to add a newline
+      Serial.println(temp[3]); // Use println to add a newline
+
     }
     // You could add else if blocks here for other commands if needed
     // else if (command == 'S') { /* do something else */ }

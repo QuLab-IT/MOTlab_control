@@ -19,6 +19,24 @@ source .venv/bin/activate
 //Install the python environment 
 python3 -m pip install -r requirements.txt
 
+//If arduino-cli shows FQBN Unknown on your arduino, please list and install your arduino FQBN, like so:
+
+```sh
+arduino-cli core search uno  //The uno in the end is just a string. Replace it by your board name, but arduino-cli will return every arduino FQBN connected, even if not installed
+
+arduino-cli core install arduino:megaavr        //Arduino used in this setuup, it may change! The package is returned with the command above!
+```
+
+//Also, you need to verify and change the USB port denomination in the config.json that corresponds to your arduino
+
+//To check which port is your arduino at please run the following command:
+usb-1a86 -> Arduino
+usb-Prolific\_Technology\_Inc -> Pressure sensor
+
+//The configuration file is located at:
+scripts/config.json
+
+
 # Uploading Arduino sketches (`tools/arduino_upload.py`)
 `tools/arduino_upload.py` compiles a sketch and uploads it to an Arduino Mega 2560 using [arduino-cli](https://arduino.github.io/arduino-cli/). It is meant to be run on the MOT's Raspberry Pi, so sketches can be updated remotely without the Arduino IDE.
 
@@ -31,22 +49,21 @@ tools/
     └── read_temperatures.ino   # replies with the thermistor temperature when it receives 'R' over serial (9600 baud)
 ```
 
-## Usage
+## Usage to upload the script to arduino
 Run the script **from inside `tools/`**, since the sketch path is resolved relative to the current directory:
 
 ```bash
-cd tools
-python arduino_upload.py --sketch_name read_temperatures --port /dev/ttyACM0
+python3 arduino_upload.py --sketch_name read_temperatures --port /dev/ttyACM0
 ```
 
 - `--sketch_name`: folder name of the sketch, without `.ino` (the script looks for `<sketch_name>/<sketch_name>.ino`).
 - `--port`: serial port the Arduino is connected to. On the Pi this is usually `/dev/ttyACM0`; run `arduino-cli board list` to check.
 
-## What it does
-1. Checks that `<sketch_name>/<sketch_name>.ino` exists.
-2. Checks that `arduino-cli` is installed. On Linux it installs it automatically to `~/.local/bin`; on other systems you have to install it yourself.
-3. Reads the `#include` lines in the sketch and installs the matching libraries with `arduino-cli lib install`. `thermistor.h` maps to `ThermistorLibrary@1.0.6`. Any other include is installed under its own name, which works only if that name is a real library in the Arduino Library Manager. For a new library, add an entry to `library_map` in `get_required_libraries()`.
-4. Updates the core index and installs the `arduino:avr` core.
-5. Compiles and uploads the sketch for the board `arduino:avr:mega:cpu=atmega2560`. To use a different board, change the FQBN in `upload_sketch()`.
+## Usage to connect the raspberry and arduino, and read the arduino messages
 
-The script exits with a non-zero status if any step fails.
+```sh
+cd ~/CODE/Motlab_control/scripts
+python3 display_multiple_temperatures.py
+```
+
+
